@@ -2,10 +2,6 @@ import os
 import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from starlette.applications import Starlette
-from starlette.responses import JSONResponse
-from starlette.routing import Route
-import uvicorn
 import requests
 import re
 from urllib.parse import quote
@@ -15,9 +11,10 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
+
 logger = logging.getLogger(__name__)
 
-# Токен бота (Render подставит его сам)
+# Токен бота (должен быть в переменных окружения Bothost)
 TOKEN = os.environ.get('BOT_TOKEN')
 if not TOKEN:
     raise ValueError("BOT_TOKEN environment variable not set!")
@@ -107,7 +104,7 @@ Eк = m·v²/2''',
 🔹 **Колебания и волны**
 • T = 1/ν
 • λ = v·T''',
-    
+
     'магнетизм': '''📚 **Конспект: Магнетизм**
 
 🔹 **Сила Ампера**
@@ -118,7 +115,7 @@ F = q·v·B·sinα
 
 🔹 **Магнитный поток**
 Φ = B·S·cosα''',
-    
+
     'квантовая': '''📚 **Конспект: Квантовая физика**
 
 🔹 **Фотоэффект**
@@ -180,40 +177,7 @@ application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("help", help_command))
 application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-# === WEBHOOKS (для Render) ===
-async def healthcheck(request):
-    return JSONResponse({"status": "ok"})
-
-async def telegram_webhook(request):
-    """Принимает обновления от Telegram"""
-    try:
-        json_data = await request.json()
-        update = Update.de_json(json_data, application.bot)
-        await application.process_update(update)
-        return JSONResponse({"ok": True})
-    except Exception as e:
-        logger.error(f"Webhook error: {e}")
-        return JSONResponse({"ok": False}, status_code=500)
-
-# Создаем Starlette приложение для вебхуков
-routes = [
-    Route(f"/webhook/{TOKEN}", telegram_webhook, methods=["POST"]),
-    Route("/healthcheck", healthcheck, methods=["GET"]),
-]
-
-app = Starlette(routes=routes)
-
-# Устанавливаем вебхук при старте
-async def setup_webhook():
-    webhook_url = f"{os.environ.get('RENDER_EXTERNAL_URL', '')}/webhook/{TOKEN}"
-    await application.bot.set_webhook(url=webhook_url)
-    logger.info(f"Webhook set to: {webhook_url}")
-
-@app.on_event("startup")
-async def startup_event():
-    await setup_webhook()
-
-# Для локального тестирования
+# Запуск бота (для Bothost используем polling)
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    print("🚀 Бот запускается на Bothost...")
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
