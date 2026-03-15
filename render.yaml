@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: physics-notes-bot
+    runtime: python
+    repo: https://github.com/ник/репозиторий
+    plan: free
+    region: frankfrut
+    buildCommand: pip install -r requirements.txt
+    starCommand: python async_bot.py
+    envVars:
+      - key: BOT_TOKEN
+        synk: false 
